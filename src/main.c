@@ -1,7 +1,9 @@
-#include <stdio.h>
+#include "raylib-gui.h"
+#include <chess/zobrist.h>
 
 int main(){
-    printf("Hello World\n");
+    init_zobrist();
+    run_raylib();
 
     return 0;
 }

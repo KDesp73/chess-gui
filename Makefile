@@ -1,7 +1,7 @@
 # Compiler and flags
 CC = gcc
-CFLAGS = -Wall -Iinclude
-LDFLAGS =
+CFLAGS = -Wall -Iinclude -Ilib/raylib/include -DDEBUG -ggdb
+LDFLAGS = -L./lib/raylib/lib -lm -lpthread -ldl -l:libraylib.a -lchess
 
 # Directories
 SRC_DIR = src
