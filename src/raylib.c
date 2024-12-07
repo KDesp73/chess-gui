@@ -1,17 +1,17 @@
+#include "colors.h"
+#include "globals.h"
+#include "raylib-gui.h"
+#include "raylib.h"
+#include "raymath.h"
+#include "utils.h"
+#include <chess/board.h>
+#include <chess/move.h>
 #include <chess/notation.h>
 #include <chess/square.h>
+#include <chess/ui.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include "raylib.h"
-#include "globals.h"
-#include "raymath.h"
-#include "raylib-gui.h"
-#include "colors.h"
-#include <chess/board.h>
-#include <chess/move.h>
-#include "utils.h"
-#include <chess/ui.h>
 
 Vector2 place_center(Rectangle outer, float innerWidth, float innerHeight)
 {
@@ -51,19 +51,19 @@ void load_textures(Texture2D textures[12], const char* theme)
 int piece_to_index(char piece)
 {
     switch(piece){
-    case 'B': return 0;
-    case 'K': return 1;
-    case 'N': return 2;
-    case 'P': return 3;
-    case 'Q': return 4;
-    case 'R': return 5;
-    case 'b': return 6;
-    case 'k': return 7;
-    case 'n': return 8;
-    case 'p': return 9;
-    case 'q': return 10;
-    case 'r': return 11;
-    default: return -1;
+        case 'B': return 0;
+        case 'K': return 1;
+        case 'N': return 2;
+        case 'P': return 3;
+        case 'Q': return 4;
+        case 'R': return 5;
+        case 'b': return 6;
+        case 'k': return 7;
+        case 'n': return 8;
+        case 'p': return 9;
+        case 'q': return 10;
+        case 'r': return 11;
+        default: return -1;
     }
 }
 
@@ -101,7 +101,7 @@ Vector2 square_clicked(Vector2 board_position)
 void highlight_square(Vector2 board_position, Vector2 square, Color color)
 {
     Vector2 square_position = Vector2Add(board_position, (Vector2){square.x * SQUARE_SIZE, square.y * SQUARE_SIZE});
-    
+
     DrawRectangleV(square_position, SQUARE(SQUARE_SIZE), color);
 }
 
@@ -114,6 +114,22 @@ Vector2 text_size(const char* text, int fontSize)
     return V(rect.width, rect.height);
 }
 
+
+void handle_exports(board_t* board, game_t* game)
+{
+        if(IsKeyPressed(KEY_F)){
+            char fen[256];
+            fen_export(board, fen);
+            SetClipboardText(fen);
+        }
+
+        if(IsKeyPressed(KEY_P)){
+            char pgn[2048];
+            pgn_export(game, pgn);
+            SetClipboardText(pgn);
+        }
+}
+
 void run_raylib(){
     SetTraceLogLevel(LOG_WARNING);
 
@@ -123,10 +139,12 @@ void run_raylib(){
     SetTargetFPS(60);
 
     Texture2D textures[12];
-    load_textures(textures, "wiki");
+    load_textures(textures, "staunty");
 
     Vector2 display_size = { GetScreenWidth(), GetScreenHeight() };
 
+    game_t game;
+    game_init(&game, NULL, "chess-gui by KDesp73", "Player 1", "Player 2", NULL);
     board_t board;
     board_init_fen(&board, NULL);
 
@@ -136,78 +154,84 @@ void run_raylib(){
     size_t count;
     square_t** valid = NULL;
 
-while (!WindowShouldClose()) {
-    display_size = (Vector2){ GetScreenWidth(), GetScreenHeight() };
-    Rectangle display = (Rectangle){.x = 0, .y = 0, VARGS(display_size)};
-    Vector2 board_position = place_center(display, SQUARE_SIZE * BOARD_SIZE, SQUARE_SIZE * BOARD_SIZE);
+    while (!WindowShouldClose()) {
+        display_size = (Vector2){ GetScreenWidth(), GetScreenHeight() };
+        Rectangle display = (Rectangle){.x = 0, .y = 0, VARGS(display_size)};
+        Vector2 board_position = place_center(display, SQUARE_SIZE * BOARD_SIZE, SQUARE_SIZE * BOARD_SIZE);
 
-    // Handle mouse click
-    if(board.result == 0){
-        if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
-            if (VCMP(selected_square, VEMPTY)) {
-                // Select the square
-                selected_square = square_clicked(board_position);
-                if (!VCMP(selected_square, VEMPTY)) {
-                    // Highlight valid moves for the selected piece
-                    square_t square;
-                    square_from_coords(&square, 7 - selected_square.y, selected_square.x);
-                    valid = valid_moves(&board, square, &count);
-                }
-            } else {
-                // Move the piece
-                move_square = square_clicked(board_position);
-                if (!VCMP(move_square, VEMPTY)) {
-                    square_t from, to;
-                    square_from_coords(&from, 7-selected_square.y, selected_square.x);
-                    square_from_coords(&to, 7-move_square.y, move_square.x);
+        handle_exports(&board, &game);
 
-                    if(move(&board, from, to, '\0')) {
+        // Handle mouse click
+        if(board.result == 0){
+            if (IsMouseButtonPressed(MOUSE_BUTTON_LEFT)) {
+                if (VCMP(selected_square, VEMPTY)) {
+                    // Select the square
+                    selected_square = square_clicked(board_position);
+                    if (!VCMP(selected_square, VEMPTY)) {
+                        // Highlight valid moves for the selected piece
+                        square_t square;
+                        square_from_coords(&square, 7 - selected_square.y, selected_square.x);
+                        valid = valid_moves(&board, square, &count);
                     }
-                    selected_square = VEMPTY;
-                    move_square = VEMPTY;
-                    if (valid != NULL && count != 0) {
-                        squares_free(&valid, count); // Free valid moves
+                } else {
+                    // Move the piece
+                    move_square = square_clicked(board_position);
+                    if (!VCMP(move_square, VEMPTY)) {
+                        square_t from, to;
+                        square_from_coords(&from, 7-selected_square.y, selected_square.x);
+                        square_from_coords(&to, 7-move_square.y, move_square.x);
+                        char promotion = '\0';
+
+                        san_move_t san;
+                        move_to_san(&board, from, to, promotion, &san);
+                        if(move(&board, from, to, promotion)) {
+                            game_add_move(&game, san);
+                        }
+                        selected_square = VEMPTY;
+                        move_square = VEMPTY;
+                        if (valid != NULL && count != 0) {
+                            squares_free(&valid, count); // Free valid moves
+                        }
                     }
                 }
             }
+        } 
+
+        // Drawing
+        BeginDrawing();
+        ClearBackground(GetColor(0x282828FF));
+
+        draw_board(board_position, SQUARE_SIZE);
+
+        // Highlight valid moves
+        if (!VCMP(selected_square, VEMPTY)) {
+            for (size_t i = 0; i < count; i++) {
+                highlight_square(board_position, V(valid[i]->x, 7 - valid[i]->y), COLOR_HIGHLIGHT);
+            }
         }
-    } 
 
-    // Drawing
-    BeginDrawing();
-    ClearBackground(GetColor(0x282828FF));
+        // Draw the pieces
+        draw_pieces(board.grid, textures, board_position);
 
-    draw_board(board_position, SQUARE_SIZE);
+        if(board.result > 0){
+            int font = 60;
 
-    // Highlight valid moves
-    if (!VCMP(selected_square, VEMPTY)) {
-        for (size_t i = 0; i < count; i++) {
-            highlight_square(board_position, V(valid[i]->x, 7 - valid[i]->y), COLOR_HIGHLIGHT);
+            const char* text = TextFormat("%s", result_score[board.result]);
+            Vector2 text_center = place_center(display, VARGS(text_size(text, font)));
+            DrawText(text, text_center.x, text_center.y, font, BLACK);
+
+            const char* text_msg = "Press Enter to exit";
+            text_center = place_center(display, VARGS(text_size(text_msg, font-20)));
+            DrawText(text_msg, text_center.x, text_center.y + font, font-20, BLACK);
+
+            if(IsKeyPressed(KEY_ENTER)){
+                exit(0);
+            }
+            handle_exports(&board, &game);
         }
+
+        EndDrawing();
     }
-
-    // Draw the pieces
-    draw_pieces(board.grid, textures, board_position);
-
-    if(board.result > 0){
-        int font = 60;
-
-        const char* text = TextFormat("%s", result_score[board.result]);
-        Vector2 text_center = place_center(display, VARGS(text_size(text, font)));
-        DrawText(text, text_center.x, text_center.y, font, BLACK);
-
-        const char* text_msg = "Press Enter to exit";
-        text_center = place_center(display, VARGS(text_size(text_msg, font-20)));
-        DrawText(text_msg, text_center.x, text_center.y + font, font-20, BLACK);
-
-
-        if(IsKeyPressed(KEY_ENTER)){
-            exit(0);
-        }
-    }
-
-    EndDrawing();
-}
 
     CloseWindow();
 
