@@ -14,6 +14,7 @@
 #define VARGS(vector) vector.x, vector.y
 #define VPRINT(vector) printf("Vector2{ x=%f, y=%f }\n", vector.x, vector.y)
 #define V(x, y) (Vector2) {x, y}
+#define R(x, y, w, h) (Rectangle) {x, y, w, h}
 #define VCMP(v1, v2) (v1.x == v2.x && v1.y == v2.y)
 #define VEMPTY V(-1, -1)
 

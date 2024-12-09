@@ -5,3 +5,4 @@ chess-gui
 .changelog
 
 *.o
+*.pgn
