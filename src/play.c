@@ -18,7 +18,7 @@ char promotion_gui(Vector2 board_position, Texture2D textures[12], int turn)
 {
     while (true) { // Loop until a valid piece is selected
         BeginDrawing();
-        ClearBackground(GetColor(0x282828FF));
+        ClearBackground(RAYWHITE);
 
         // Calculate the position for the promotion GUI
         Vector2 position = place_center(
@@ -104,7 +104,7 @@ void gui_play(ui_config_t config, const char* fen)
         // Highlight valid moves
         if (!VCMP(selected_square, VEMPTY)) {
             for (size_t i = 0; i < count; i++) {
-                highlight_square(board_position, V(valid[i]->x, 7 - valid[i]->y), COLOR_HIGHLIGHT);
+                highlight_square(board_position, V(valid[i]->x, 7 - valid[i]->y), ((valid[i]->x + valid[i]->y) % 2) ? COLOR_HIGHLIGHT_WHITE : COLOR_HIGHLIGHT_BLACK);
             }
         }
 
@@ -127,20 +127,22 @@ void gui_play(ui_config_t config, const char* fen)
 
                         if (pawn_is_promoting(&board, from, to)) {
                             promotion = promotion_gui(board_position, textures, board.turn);
-                            printf("promotion: %c\n", promotion);
-                        }
+                        } else promotion = '\0';
 
                         san_move_t san;
                         move_to_san(&board, from, to, promotion, &san);
                         if (move(&board, from, to, promotion)) {
                             game_add_move(&game, san);
                             promotion = '\0';
+                        } else {
+                            selected_square = VEMPTY;
+                            squares_free(&valid, count);
+                            continue;
                         }
+
                         selected_square = VEMPTY;
                         move_square = VEMPTY;
-                        if (valid != NULL && count != 0) {
-                            squares_free(&valid, count); // Free valid moves
-                        }
+                        squares_free(&valid, count);
                     }
                 }
             }
