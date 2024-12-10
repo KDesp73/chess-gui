@@ -15,12 +15,12 @@
 
 void check_result(board_t* board, game_t* game, Rectangle display)
 {
-    if(board->result > 0){
-        game_set_result(game, result_score[board->result]);
+    if(board->state.result > 0){
+        game_set_result(game, result_score[board->state.result]);
         
         int font = 60;
 
-        const char* text = TextFormat("%s", result_score[board->result]);
+        const char* text = TextFormat("%s", result_score[board->state.result]);
         Vector2 text_center = place_center(display, VARGS(text_size(text, font)));
         DrawText(text, text_center.x, text_center.y, font, BLACK);
 
