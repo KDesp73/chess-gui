@@ -16,6 +16,8 @@
 void check_result(board_t* board, game_t* game, Rectangle display)
 {
     if(board->result > 0){
+        game_set_result(game, result_score[board->result]);
+        
         int font = 60;
 
         const char* text = TextFormat("%s", result_score[board->result]);
@@ -146,6 +148,7 @@ void handle_exports(board_t* board, game_t* game)
         if(IsKeyPressed(KEY_P)){
             char pgn[2048];
             pgn_export(game, pgn);
+            game_print(*game);
             SetClipboardText(pgn);
         }
 }
